@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -55,21 +56,31 @@ type repo struct {
 	FullPath  string `json:"full_path,omitempty"`
 }
 
+// flag bool to clean
+var clean bool
+
 func main() {
-	rootPath := "/Users/stephane.guillemot/git"
+	rootPath := os.Getenv("RF_BASEPATH")
 	cacheFile := "/tmp/.repos"
+
+	flag.BoolVar(&clean, "c", false, "clean cache")
+	flag.Parse()
+
+	if clean {
+		os.Remove(cacheFile)
+		return
+	}
 
 	repos := readCache(rootPath, cacheFile)
 	idx, err := fuzzyfinder.Find(repos, func(i int) string {
 		return repos[i].ShortName
-	}, fuzzyfinder.WithPromptString("select a repository:  "))
+	})
 	if err != nil {
-		fmt.Println("Error selecting repository:", err)
 		return
 	}
 	fmt.Println(repos[idx].FullPath)
-
 }
+
 func getLastTwoElements(path string) string {
 	elements := strings.Split(path, string(os.PathSeparator))
 	if len(elements) < 2 {
